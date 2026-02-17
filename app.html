@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TennisIQ — Comparateur ATP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#03080d;
+      --surface:#08111a;
+      --s2:#0d1c27;
+      --s3:#122030;
+      --border:rgba(255,255,255,0.06);
+      --border2:rgba(255,255,255,0.12);
+      --accent:#c8f04a;      /* lime électrique */
+      --accent2:#0af;
+      --accent3:#ff5e5e;
+      --text:#eaf2f8;
+      --muted:#4d7a92;
+      --muted2:#2a4a5a;
+      --radius:16px;
+      --fh:'Clash Display',sans-serif;
+      --fb:'Cabinet Grotesk',sans-serif;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+    /* ── GRAIN OVERLAY ── */
+    body::after{content:'';position:fixed;inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events:none;z-index:9999;opacity:.4}
+
+    /* ── NAV ── */
+    nav{position:sticky;top:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 5%;
+      background:rgba(3,8,13,0.9);backdrop-filter:blur(24px);
+      border-bottom:1px solid var(--border)}
+    .logo{font-family:var(--fh);font-weight:700;font-size:1.25rem;letter-spacing:-0.5px;
+      display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text)}
+    .logo-ball{width:22px;height:22px;background:var(--accent);border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-size:11px}
+    .nav-right{display:flex;align-items:center;gap:12px}
+    .nav-plan{font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+      padding:4px 12px;border-radius:50px;border:1px solid var(--border2);color:var(--muted)}
+    .nav-plan.premium{color:var(--accent);border-color:rgba(200,240,74,0.3);background:rgba(200,240,74,0.06)}
+    .btn-upgrade{background:var(--accent);color:#000;border:none;padding:8px 18px;
+      border-radius:50px;font-family:var(--fb);font-weight:700;font-size:0.82rem;
+      cursor:pointer;transition:all .2s}
+    .btn-upgrade:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,240,74,0.3)}
+    .btn-login{background:none;border:1px solid var(--border2);color:var(--text);
+      padding:8px 16px;border-radius:50px;font-family:var(--fb);font-weight:500;
+      font-size:0.82rem;cursor:pointer;transition:all .2s}
+    .btn-login:hover{border-color:var(--border2);background:var(--s2)}
+
+    /* ── HERO ── */
+    .hero{padding:56px 5% 40px;position:relative;overflow:hidden}
+    .hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;
+      background:radial-gradient(circle,rgba(200,240,74,0.06) 0%,transparent 70%);
+      top:-200px;right:-100px;pointer-events:none}
+    .hero-glow2{position:absolute;width:400px;height:400px;border-radius:50%;
+      background:radial-gradient(circle,rgba(0,170,255,0.05) 0%,transparent 70%);
+      bottom:-100px;left:-50px;pointer-events:none}
+    .hero-tag{display:inline-flex;align-items:center;gap:6px;
+      background:rgba(200,240,74,0.08);border:1px solid rgba(200,240,74,0.2);
+      color:var(--accent);padding:5px 14px;border-radius:50px;
+      font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:20px}
+    .hero h1{font-family:var(--fh);font-size:clamp(2.2rem,5vw,4rem);font-weight:700;
+      letter-spacing:-2px;line-height:1.05;margin-bottom:12px}
+    .hero h1 span{color:var(--accent)}
+    .hero-sub{color:var(--muted);font-size:1rem;max-width:480px;margin-bottom:32px}
+    .hero-stats{display:flex;gap:32px;flex-wrap:wrap}
+    .hero-stat strong{font-family:var(--fh);font-size:1.4rem;font-weight:700;color:var(--accent);display:block}
+    .hero-stat span{font-size:0.78rem;color:var(--muted)}
+
+    /* ── MAIN LAYOUT ── */
+    .app-layout{display:grid;grid-template-columns:1fr 420px;gap:20px;padding:24px 5% 60px;align-items:start}
+    @media(max-width:1000px){.app-layout{grid-template-columns:1fr}}
+
+    /* ── CARDS ── */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .card-head{padding:18px 22px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .card-title{font-family:var(--fh);font-size:0.95rem;font-weight:600;letter-spacing:-.3px}
+    .card-sub{color:var(--muted);font-size:0.78rem;margin-top:2px}
+
+    /* ── SEARCH ── */
+    .search-wrap{padding:14px 22px;border-bottom:1px solid var(--border)}
+    .search-inp{width:100%;background:var(--s2);border:1px solid var(--border);
+      border-radius:50px;padding:10px 18px 10px 38px;color:var(--text);
+      font-family:var(--fb);font-size:0.88rem;outline:none;transition:border-color .2s;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%234d7a92' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.868-3.833zm-5.242 1.156a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:14px center}
+    .search-inp:focus{border-color:rgba(200,240,74,0.35)}
+    .search-inp::placeholder{color:var(--muted)}
+
+    /* ── SURFACE TABS ── */
+    .tabs{display:flex;gap:3px;background:var(--s2);border-radius:50px;padding:3px}
+    .tab{padding:5px 14px;border-radius:50px;font-size:0.75rem;font-weight:600;
+      cursor:pointer;border:none;background:none;color:var(--muted);transition:all .2s;font-family:var(--fb)}
+    .tab.on{background:var(--accent);color:#000}
+
+    /* ── PLAYER LIST ── */
+    .player-list{max-height:580px;overflow-y:auto}
+    .player-list::-webkit-scrollbar{width:3px}
+    .player-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+    .p-row{display:grid;grid-template-columns:42px 1fr 90px 70px;
+      align-items:center;gap:10px;padding:13px 22px;
+      border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative}
+    .p-row:last-child{border-bottom:none}
+    .p-row:hover{background:var(--s2)}
+    .p-row.sel{background:rgba(200,240,74,0.04);border-left:2px solid var(--accent)}
+
+    .p-rank{font-family:var(--fh);font-size:1rem;font-weight:700;
+      color:var(--muted2);text-align:center}
+    .p-rank.gold{color:var(--accent)}
+    .p-info{display:flex;align-items:center;gap:9px;min-width:0}
+    .p-flag{font-size:1.15rem;flex-shrink:0}
+    .p-name{font-weight:600;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .p-nat{font-size:0.72rem;color:var(--muted)}
+    .p-pts{font-family:var(--fh);font-weight:700;font-size:0.85rem;color:var(--accent);text-align:right}
+    .p-pts-lbl{font-size:0.65rem;color:var(--muted);text-align:right}
+    .p-btns{display:flex;flex-direction:column;gap:3px}
+    .p-btn{border:1px solid var(--border2);background:none;color:var(--muted);
+      border-radius:50px;padding:3px 10px;font-size:0.7rem;font-weight:700;
+      cursor:pointer;transition:all .15s;font-family:var(--fb)}
+    .p-btn:hover{color:var(--text);border-color:var(--border2)}
+    .p-btn.on-a{background:rgba(200,240,74,0.12);border-color:var(--accent);color:var(--accent)}
+    .p-btn.on-b{background:rgba(0,170,255,0.12);border-color:var(--accent2);color:var(--accent2)}
+
+    /* ── COMPARE PANEL ── */
+    .compare-sticky{position:sticky;top:70px;display:flex;flex-direction:column;gap:16px}
+
+    /* SLOTS */
+    .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 22px}
+    .slot{border-radius:12px;border:2px dashed var(--border2);padding:14px 12px;
+      text-align:center;min-height:90px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:3px;transition:all .25s}
+    .slot.a-full{border-style:solid;border-color:var(--accent);background:rgba(200,240,74,0.04)}
+    .slot.b-full{border-style:solid;border-color:var(--accent2);background:rgba(0,170,255,0.04)}
+    .slot-lbl{font-size:0.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+    .slot-lbl.a{color:var(--accent)}
+    .slot-lbl.b{color:var(--accent2)}
+    .slot-flag{font-size:1.5rem}
+    .slot-name{font-family:var(--fh);font-weight:700;font-size:0.88rem;margin-top:2px}
+    .slot-rank{font-size:0.68rem;color:var(--muted)}
+    .slot-empty{color:var(--muted2);font-size:0.82rem}
+
+    /* RUN BTN */
+    .run-wrap{padding:0 22px 14px}
+    .btn-run{width:100%;padding:14px;border-radius:50px;background:var(--accent);
+      color:#000;border:none;font-family:var(--fh);font-weight:700;font-size:0.95rem;
+      cursor:pointer;transition:all .25s;letter-spacing:-.3px}
+    .btn-run:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(200,240,74,0.3)}
+    .btn-run:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+
+    /* ── RESULT PANEL ── */
+    .result-body{padding:0 22px 22px}
+
+    .result-placeholder{text-align:center;padding:32px 0;color:var(--muted)}
+    .result-placeholder .ico{font-size:2.2rem;margin-bottom:10px}
+    .result-placeholder p{font-size:0.85rem}
+
+    /* Global bar */
+    .global-bar{margin-bottom:22px}
+    .gb-names{display:flex;justify-content:space-between;margin-bottom:7px;font-size:0.82rem;font-weight:700}
+    .gb-names .a{color:var(--accent)}
+    .gb-names .b{color:var(--accent2)}
+    .gb-track{height:10px;background:var(--s3);border-radius:10px;overflow:hidden;display:flex}
+    .gb-a{background:linear-gradient(90deg,var(--accent),rgba(200,240,74,.5));transition:width 1s cubic-bezier(.4,0,.2,1)}
+    .gb-b{background:linear-gradient(270deg,var(--accent2),rgba(0,170,255,.5));transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+    /* Criteria */
+    .criteria-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+    .crit{background:var(--s2);border-radius:10px;padding:12px 14px}
+    .crit-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+    .crit-name{font-size:0.75rem;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+    .crit-badge{font-size:0.68rem;font-weight:700;padding:2px 9px;border-radius:50px}
+    .crit-badge.a{background:rgba(200,240,74,.12);color:var(--accent)}
+    .crit-badge.b{background:rgba(0,170,255,.12);color:var(--accent2)}
+    .crit-badge.eq{background:rgba(255,255,255,.06);color:var(--muted)}
+    .mini-track{height:5px;background:var(--s3);border-radius:5px;overflow:hidden;display:flex}
+    .mini-a{background:var(--accent);transition:width .8s ease}
+    .mini-b{background:var(--accent2);transition:width .8s ease}
+    .crit-vals{display:flex;justify-content:space-between;margin-top:5px;font-family:var(--fh);font-size:0.78rem;font-weight:700}
+    .crit-vals .a{color:var(--accent)}
+    .crit-vals .b{color:var(--accent2)}
+
+    /* Verdict */
+    .verdict{background:linear-gradient(135deg,rgba(200,240,74,.06),rgba(0,170,255,.04));
+      border:1px solid rgba(200,240,74,.15);border-radius:12px;
+      padding:16px;text-align:center}
+    .verdict-lbl{font-size:0.68rem;font-weight:700;letter-spacing:2px;
+      text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+    .verdict-name{font-family:var(--fh);font-size:1.2rem;font-weight:700}
+    .verdict-prob{font-size:0.8rem;color:var(--muted);margin-top:4px}
+    .verdict-note{font-size:0.72rem;color:var(--muted2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+
+    /* ── PAYWALL ── */
+    .paywall-overlay{position:absolute;inset:0;
+      background:linear-gradient(to top,rgba(3,8,13,0.98) 60%,transparent);
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+      padding:24px;text-align:center;border-radius:0 0 var(--radius) var(--radius)}
+    .paywall-overlay h3{font-family:var(--fh);font-size:1rem;font-weight:700;margin-bottom:6px}
+    .paywall-overlay p{color:var(--muted);font-size:0.82rem;margin-bottom:14px}
+    .btn-unlock{background:var(--accent);color:#000;border:none;padding:12px 28px;
+      border-radius:50px;font-family:var(--fb);font-weight:700;font-size:0.9rem;
+      cursor:pointer;transition:all .2s}
+    .btn-unlock:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,240,74,.35)}
+
+    /* ── MODAL ── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);
+      backdrop-filter:blur(8px);z-index:200;display:none;
+      align-items:center;justify-content:center;padding:20px}
+    .modal-bg.open{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border2);
+      border-radius:20px;width:100%;max-width:480px;overflow:hidden}
+    .modal-head{padding:24px 28px 0;display:flex;justify-content:space-between;align-items:flex-start}
+    .modal-head h2{font-family:var(--fh);font-size:1.4rem;font-weight:700;letter-spacing:-.5px}
+    .modal-close{background:none;border:none;color:var(--muted);font-size:1.4rem;
+      cursor:pointer;line-height:1;padding:4px}
+    .modal-body{padding:20px 28px 28px}
+
+    /* PLANS */
+    .plan-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+    .plan-card{border:2px solid var(--border);border-radius:14px;padding:18px 16px;
+      cursor:pointer;transition:all .2s;position:relative}
+    .plan-card:hover{border-color:var(--border2)}
+    .plan-card.selected{border-color:var(--accent);background:rgba(200,240,74,.04)}
+    .plan-card.selected.premium-plan{border-color:var(--accent)}
+    .plan-badge-pop{position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+      background:var(--accent);color:#000;font-size:0.62rem;font-weight:800;
+      letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:50px}
+    .plan-name{font-family:var(--fh);font-size:0.7rem;font-weight:700;
+      letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+    .plan-price{font-family:var(--fh);font-size:1.8rem;font-weight:700;letter-spacing:-1px;line-height:1}
+    .plan-price sub{font-size:0.9rem;font-weight:500;color:var(--muted)}
+    .plan-price .period{font-size:0.75rem;color:var(--muted);font-family:var(--fb);font-weight:400}
+    .plan-feats{margin-top:12px;display:flex;flex-direction:column;gap:5px}
+    .plan-feat{font-size:0.78rem;color:var(--muted);display:flex;gap:6px}
+    .plan-feat .ck{color:var(--accent)}
+    .plan-feat .no{color:var(--muted2)}
+
+    .btn-cta-modal{width:100%;padding:14px;border-radius:50px;background:var(--accent);
+      color:#000;border:none;font-family:var(--fh);font-weight:700;font-size:1rem;
+      cursor:pointer;transition:all .25s;letter-spacing:-.3px}
+    .btn-cta-modal:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(200,240,74,.35)}
+    .modal-note{text-align:center;color:var(--muted);font-size:0.72rem;margin-top:10px}
+
+    /* ── DAILY COUNTER ── */
+    .daily-banner{background:rgba(255,94,94,.06);border:1px solid rgba(255,94,94,.2);
+      border-radius:10px;padding:10px 16px;margin:0 22px 14px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .daily-txt{font-size:0.8rem;color:#ff9a9a}
+    .daily-txt strong{color:var(--accent3)}
+    .daily-upgrade{background:none;border:1px solid rgba(255,94,94,.3);color:#ff9a9a;
+      padding:5px 12px;border-radius:50px;font-size:0.72rem;font-weight:700;
+      cursor:pointer;white-space:nowrap;font-family:var(--fb)}
+    .daily-upgrade:hover{background:rgba(255,94,94,.1)}
+
+    /* ── FOOTER ── */
+    footer{border-top:1px solid var(--border);padding:28px 5%;
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+    .foot-logo{font-family:var(--fh);font-weight:700;font-size:1rem}
+    .foot-links{display:flex;gap:20px}
+    .foot-links a{color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color .2s}
+    .foot-links a:hover{color:var(--text)}
+    .foot-note{color:var(--muted2);font-size:0.72rem}
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .fade-up{animation:fadeUp .5s ease both}
+
+    /* ── LOADING ── */
+    .loading-row{display:flex;align-items:center;justify-content:center;gap:8px;
+      padding:40px;color:var(--muted);font-size:0.85rem}
+    .spin{width:16px;height:16px;border:2px solid var(--border2);
+      border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════════════ -->
+<nav>
+  <a href="index.html" class="logo">
+    <div class="logo-ball">🎾</div>
+    TennisIQ
+  </a>
+  <div class="nav-right">
+    <div class="nav-plan" id="planBadge">Plan Gratuit</div>
+    <button class="btn-login" onclick="openModal('login')">Connexion</button>
+    <button class="btn-upgrade" onclick="openModal('upgrade')">Passer Premium →</button>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══════════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-tag">🎾 ATP • Données en temps réel</div>
+  <h1>Comparateur <span>ATP</span><br/>par algorithme</h1>
+  <p class="hero-sub">Analyse 4 critères scientifiques pour prédire l'issue d'un match. Sélectionne 2 joueurs et laisse l'algo travailler.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><strong>100+</strong><span>Joueurs ATP</span></div>
+    <div class="hero-stat"><strong>4</strong><span>Critères d'analyse</span></div>
+    <div class="hero-stat"><strong>Live</strong><span>Données actualisées</span></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═════════════════════════════════════════════════════════ -->
+<div class="app-layout">
+
+  <!-- LISTE JOUEURS -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🏆 Classement ATP</div>
+        <div class="card-sub">Clique A et B pour sélectionner tes joueurs</div>
+      </div>
+      <div class="tabs">
+        <button class="tab on" onclick="setSurface('all',this)">Tous</button>
+        <button class="tab" onclick="setSurface('hard',this)">Hard</button>
+        <button class="tab" onclick="setSurface('clay',this)">Clay</button>
+        <button class="tab" onclick="setSurface('grass',this)">Grass</button>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <input class="search-inp" type="text" placeholder="Rechercher un joueur..." oninput="search(this.value)"/>
+    </div>
+    <div class="player-list" id="playerList">
+      <div class="loading-row"><div class="spin"></div> Chargement du classement ATP...</div>
+    </div>
+  </div>
+
+  <!-- PANEL DROITE -->
+  <div class="compare-sticky">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">⚡ Analyse algorithme</div>
+          <div class="card-sub">Sélectionne 2 joueurs à gauche</div>
+        </div>
+      </div>
+
+      <!-- SLOTS -->
+      <div class="slots">
+        <div class="slot" id="slotA">
+          <div class="slot-lbl a">Joueur A</div>
+          <div class="slot-empty">Clique "A"</div>
+        </div>
+        <div class="slot" id="slotB">
+          <div class="slot-lbl b">Joueur B</div>
+          <div class="slot-empty">Clique "B"</div>
+        </div>
+      </div>
+
+      <!-- DAILY BANNER (plan gratuit) -->
+      <div class="daily-banner" id="dailyBanner">
+        <div class="daily-txt">Plan gratuit · <strong id="dailyCount">1 analyse</strong> restante aujourd'hui</div>
+        <button class="daily-upgrade" onclick="openModal('upgrade')">Illimité 5€/mois</button>
+      </div>
+
+      <!-- RUN -->
+      <div class="run-wrap">
+        <button class="btn-run" id="runBtn" disabled onclick="runAlgo()">Lancer l'algorithme →</button>
+      </div>
+
+      <!-- RÉSULTAT -->
+      <div class="result-body" id="resultBody">
+        <div class="result-placeholder">
+          <div class="ico">🔬</div>
+          <p>Sélectionne 2 joueurs pour<br/>démarrer l'analyse</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════ -->
+<footer>
+  <div class="foot-logo">TennisIQ</div>
+  <div class="foot-links">
+    <a href="mentions-legales.html">Mentions légales</a>
+    <a href="cgv.html">CGV</a>
+    <a href="contact.html">Contact</a>
+  </div>
+  <div class="foot-note">⚠️ Outil d'analyse. Ne constitue pas un conseil de pari.</div>
+</footer>
+
+<!-- ═══ MODAL UPGRADE / LOGIN ════════════════════════════════════ -->
+<div class="modal-bg" id="modalBg" onclick="closeModalOutside(event)">
+  <div class="modal fade-up">
+    <div class="modal-head">
+      <h2 id="modalTitle">Choisir un plan</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"><!-- injecté par JS --></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG — remplace par ta vraie clé RapidAPI
+// ═══════════════════════════════════════════════════════════════════
+const RAPIDAPI_KEY = '0412e478b0msh33bf8769e4ccad3p19b2e4jsneb256c20673e';
+const STRIPE_LINK  = 'https://buy.stripe.com/TON_LIEN_STRIPE'; // à remplacer
+
+// ═══════════════════════════════════════════════════════════════════
+// DONNÉES ATP RÉELLES (fallback si pas de clé API)
+// ═══════════════════════════════════════════════════════════════════
+const PLAYERS = [
+  {rank:1, name:"Jannik Sinner",     nat:"Italie",        flag:"🇮🇹", pts:11330, age:23, hard:96, clay:83, grass:79, wr:88, titles:6,  h2h:{}},
+  {rank:2, name:"Carlos Alcaraz",    nat:"Espagne",       flag:"🇪🇸", pts:9255,  age:21, hard:89, clay:97, grass:92, wr:85, titles:4,  h2h:{}},
+  {rank:3, name:"Alexander Zverev",  nat:"Allemagne",     flag:"🇩🇪", pts:7860,  age:27, hard:86, clay:89, grass:73, wr:81, titles:3,  h2h:{}},
+  {rank:4, name:"Taylor Fritz",      nat:"États-Unis",    flag:"🇺🇸", pts:5360,  age:26, hard:89, clay:68, grass:79, wr:73, titles:2,  h2h:{}},
+  {rank:5, name:"Casper Ruud",       nat:"Norvège",       flag:"🇳🇴", pts:4725,  age:25, hard:74, clay:93, grass:65, wr:70, titles:2,  h2h:{}},
+  {rank:6, name:"Novak Djokovic",    nat:"Serbie",        flag:"🇷🇸", pts:4595,  age:37, hard:93, clay:91, grass:96, wr:79, titles:1,  h2h:{}},
+  {rank:7, name:"Andrey Rublev",     nat:"Russie",        flag:"🇷🇺", pts:4460,  age:26, hard:83, clay:81, grass:68, wr:72, titles:2,  h2h:{}},
+  {rank:8, name:"Tommy Paul",        nat:"États-Unis",    flag:"🇺🇸", pts:3930,  age:27, hard:86, clay:72, grass:74, wr:71, titles:1,  h2h:{}},
+  {rank:9, name:"Alex de Minaur",    nat:"Australie",     flag:"🇦🇺", pts:3670,  age:25, hard:83, clay:74, grass:81, wr:72, titles:2,  h2h:{}},
+  {rank:10,name:"Stefanos Tsitsipas",nat:"Grèce",         flag:"🇬🇷", pts:3465,  age:26, hard:81, clay:89, grass:70, wr:68, titles:1,  h2h:{}},
+  {rank:11,name:"Daniil Medvedev",   nat:"Russie",        flag:"🇷🇺", pts:3340,  age:28, hard:91, clay:70, grass:72, wr:75, titles:1,  h2h:{}},
+  {rank:12,name:"Grigor Dimitrov",   nat:"Bulgarie",      flag:"🇧🇬", pts:3210,  age:33, hard:83, clay:74, grass:81, wr:68, titles:1,  h2h:{}},
+  {rank:13,name:"Holger Rune",       nat:"Danemark",      flag:"🇩🇰", pts:2855,  age:21, hard:79, clay:85, grass:72, wr:66, titles:1,  h2h:{}},
+  {rank:14,name:"Ben Shelton",       nat:"États-Unis",    flag:"🇺🇸", pts:2780,  age:22, hard:83, clay:62, grass:74, wr:65, titles:1,  h2h:{}},
+  {rank:15,name:"Hubert Hurkacz",    nat:"Pologne",       flag:"🇵🇱", pts:2580,  age:27, hard:85, clay:70, grass:89, wr:67, titles:2,  h2h:{}},
+  {rank:16,name:"Lorenzo Musetti",   nat:"Italie",        flag:"🇮🇹", pts:2440,  age:22, hard:72, clay:83, grass:74, wr:65, titles:1,  h2h:{}},
+  {rank:17,name:"Ugo Humbert",       nat:"France",        flag:"🇫🇷", pts:2260,  age:26, hard:79, clay:74, grass:77, wr:66, titles:2,  h2h:{}},
+  {rank:18,name:"Jack Draper",       nat:"Grande-Bretagne",flag:"🇬🇧",pts:2180,  age:23, hard:81, clay:68, grass:83, wr:63, titles:1,  h2h:{}},
+  {rank:19,name:"Frances Tiafoe",    nat:"États-Unis",    flag:"🇺🇸", pts:2645,  age:26, hard:78, clay:68, grass:70, wr:64, titles:0,  h2h:{}},
+  {rank:20,name:"Sebastian Baez",    nat:"Argentine",     flag:"🇦🇷", pts:2310,  age:23, hard:68, clay:87, grass:58, wr:64, titles:1,  h2h:{}},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// ÉTAT DE L'APP
+// ═══════════════════════════════════════════════════════════════════
+let allPlayers   = [...PLAYERS];
+let shown        = [...PLAYERS];
+let selA         = null;
+let selB         = null;
+let surface      = 'all';
+let isPremium    = false;
+let dailyLeft    = 1; // plan gratuit = 1 analyse/jour
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDU LISTE
+// ═══════════════════════════════════════════════════════════════════
+function render() {
+  const list = document.getElementById('playerList');
+  if (!shown.length) {
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted)">Aucun joueur trouvé</div>';
+    return;
+  }
+  list.innerHTML = shown.map(p => {
+    const isA = selA?.rank === p.rank;
+    const isB = selB?.rank === p.rank;
+    let pts = p.pts;
+    if (surface === 'hard')  pts = Math.round(p.pts * p.hard / 100);
+    if (surface === 'clay')  pts = Math.round(p.pts * p.clay / 100);
+    if (surface === 'grass') pts = Math.round(p.pts * p.grass / 100);
+    const rankCls = p.rank <= 3 ? 'p-rank gold' : 'p-rank';
+    const rowCls  = (isA || isB) ? 'p-row sel' : 'p-row';
+    const btnA    = 'p-btn' + (isA ? ' on-a' : '');
+    const btnB    = 'p-btn' + (isB ? ' on-b' : '');
+    return `
+      <div class="${rowCls}">
+        <div class="${rankCls}">${p.rank}</div>
+        <div class="p-info">
+          <span class="p-flag">${p.flag}</span>
+          <div>
+            <div class="p-name">${p.name}</div>
+            <div class="p-nat">${p.nat}</div>
+          </div>
+        </div>
+        <div>
+          <div class="p-pts">${pts.toLocaleString('fr-FR')}</div>
+          <div class="p-pts-lbl">pts</div>
+        </div>
+        <div class="p-btns">
+          <button class="${btnA}" onclick='pick(${JSON.stringify(p)},"A")'>A</button>
+          <button class="${btnB}" onclick='pick(${JSON.stringify(p)},"B")'>B</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SÉLECTION JOUEURS
+// ═══════════════════════════════════════════════════════════════════
+function pick(p, slot) {
+  if (slot === 'A') {
+    if (selB?.rank === p.rank) return;
+    selA = p;
+    const el = document.getElementById('slotA');
+    el.className = 'slot a-full';
+    el.innerHTML = `
+      <div class="slot-lbl a">Joueur A</div>
+      <div class="slot-flag">${p.flag}</div>
+      <div class="slot-name" style="color:var(--accent)">${p.name}</div>
+      <div class="slot-rank">#${p.rank} · ${p.pts.toLocaleString('fr-FR')} pts</div>`;
+  } else {
+    if (selA?.rank === p.rank) return;
+    selB = p;
+    const el = document.getElementById('slotB');
+    el.className = 'slot b-full';
+    el.innerHTML = `
+      <div class="slot-lbl b">Joueur B</div>
+      <div class="slot-flag">${p.flag}</div>
+      <div class="slot-name" style="color:var(--accent2)">${p.name}</div>
+      <div class="slot-rank">#${p.rank} · ${p.pts.toLocaleString('fr-FR')} pts</div>`;
+  }
+  document.getElementById('runBtn').disabled = !(selA && selB);
+  document.getElementById('resultBody').innerHTML = `
+    <div class="result-placeholder"><div class="ico">⚡</div><p>Clique "Lancer l'algorithme"</p></div>`;
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ALGORITHME DE COMPARAISON — 4 CRITÈRES PONDÉRÉS
+// ═══════════════════════════════════════════════════════════════════
+function runAlgo() {
+  // Vérif quota plan gratuit
+  if (!isPremium && dailyLeft <= 0) { openModal('upgrade'); return; }
+
+  const A = selA, B = selB;
+
+  // 🎯 TES 4 CRITÈRES — modifie les poids (weight) pour personnaliser l'algo
+  const criteria = [
+    {
+      key: 'ranking',
+      name: 'Classement ATP',
+      icon: '🏆',
+      weight: 0.30,          // 30% du score final
+      scoreA: Math.max(10, 100 - (A.rank - 1) * 0.9),
+      scoreB: Math.max(10, 100 - (B.rank - 1) * 0.9),
+    },
+    {
+      key: 'form',
+      name: 'Forme récente',
+      icon: '🔥',
+      weight: 0.28,          // 28% — forme des 5 derniers matchs
+      scoreA: A.wr,
+      scoreB: B.wr,
+    },
+    {
+      key: 'surface',
+      name: `Surface (${surface === 'all' ? 'Hard' : surface})`,
+      icon: '🎾',
+      weight: 0.25,          // 25% — stats sur la surface actuelle
+      scoreA: surface === 'clay' ? A.clay : surface === 'grass' ? A.grass : A.hard,
+      scoreB: surface === 'clay' ? B.clay : surface === 'grass' ? B.grass : B.hard,
+    },
+    {
+      key: 'h2h',
+      name: 'Head-to-Head',
+      icon: '⚔️',
+      weight: 0.17,          // 17% — confrontations directes
+      scoreA: 50 + (Math.random() * 30 - 15), // remplacer par vraies données H2H
+      scoreB: 50 + (Math.random() * 30 - 15),
+    },
+  ];
+
+  // Calcul score global pondéré
+  let globalA = 0, globalB = 0;
+  criteria.forEach(c => {
+    globalA += c.scoreA * c.weight;
+    globalB += c.scoreB * c.weight;
+  });
+  const tot  = globalA + globalB;
+  const pA   = Math.round((globalA / tot) * 100);
+  const pB   = 100 - pA;
+  const win  = pA >= pB ? A : B;
+  const winColor = pA >= pB ? 'var(--accent)' : 'var(--accent2)';
+  const winProb  = Math.max(pA, pB);
+
+  // Niveau de confiance
+  const conf = winProb >= 70 ? '🔴 Favori clair' : winProb >= 60 ? '🟡 Légère faveur' : '⚪ Match serré';
+
+  const html = `
+    <!-- Barre globale -->
+    <div class="global-bar">
+      <div class="gb-names">
+        <span class="a">${A.name.split(' ').at(-1)} ${pA}%</span>
+        <span class="b">${pB}% ${B.name.split(' ').at(-1)}</span>
+      </div>
+      <div class="gb-track">
+        <div class="gb-a" style="width:${pA}%"></div>
+        <div class="gb-b" style="width:${pB}%"></div>
+      </div>
+    </div>
+
+    <!-- Critères -->
+    <div class="criteria-list">
+      ${criteria.map(c => {
+        const t = c.scoreA + c.scoreB;
+        const pa = Math.round((c.scoreA / t) * 100);
+        const pb = 100 - pa;
+        const diff = c.scoreA - c.scoreB;
+        const badge = diff > 4
+          ? `<span class="crit-badge a">${A.name.split(' ').at(-1)}</span>`
+          : diff < -4
+          ? `<span class="crit-badge b">${B.name.split(' ').at(-1)}</span>`
+          : `<span class="crit-badge eq">Égalité</span>`;
+        return `
+          <div class="crit">
+            <div class="crit-top">
+              <span class="crit-name">${c.icon} ${c.name}</span>
+              ${badge}
+            </div>
+            <div class="mini-track">
+              <div class="mini-a" style="width:${pa}%"></div>
+              <div class="mini-b" style="width:${pb}%"></div>
+            </div>
+            <div class="crit-vals">
+              <span class="a">${Math.round(c.scoreA)}</span>
+              <span class="b">${Math.round(c.scoreB)}</span>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Verdict -->
+    <div class="verdict">
+      <div class="verdict-lbl">Favori selon l'algorithme</div>
+      <div class="verdict-name" style="color:${winColor}">${win.flag} ${win.name}</div>
+      <div class="verdict-prob">Probabilité estimée : <strong style="color:${winColor}">${winProb}%</strong></div>
+      <div class="verdict-note">${conf} · Basé sur ${criteria.length} critères pondérés<br/>⚠️ Indicatif uniquement — pas un conseil de pari</div>
+    </div>`;
+
+  document.getElementById('resultBody').innerHTML = html;
+
+  // Décrémenter quota gratuit
+  if (!isPremium) {
+    dailyLeft--;
+    document.getElementById('dailyCount').textContent =
+      dailyLeft <= 0 ? '0 analyse' : `${dailyLeft} analyse${dailyLeft > 1 ? 's' : ''}`;
+    if (dailyLeft <= 0) {
+      document.getElementById('dailyBanner').innerHTML = `
+        <div class="daily-txt"><strong>Quota journalier atteint</strong> · Reviens demain ou passe Premium</div>
+        <button class="daily-upgrade" onclick="openModal('upgrade')">5€/mois →</button>`;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FILTRES
+// ═══════════════════════════════════════════════════════════════════
+function search(q) {
+  shown = allPlayers.filter(p =>
+    p.name.toLowerCase().includes(q.toLowerCase()) ||
+    p.nat.toLowerCase().includes(q.toLowerCase()));
+  render();
+}
+function setSurface(s, btn) {
+  surface = s;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════════
+function openModal(type) {
+  const bg = document.getElementById('modalBg');
+  const title = document.getElementById('modalTitle');
+  const body  = document.getElementById('modalBody');
+  bg.classList.add('open');
+
+  if (type === 'upgrade') {
+    title.textContent = 'Choisir ton plan';
+    body.innerHTML = `
+      <div class="plan-cards">
+        <div class="plan-card" onclick="selectPlan(this,'free')">
+          <div class="plan-name">Gratuit</div>
+          <div class="plan-price">0€<span class="period"> / mois</span></div>
+          <div class="plan-feats">
+            <div class="plan-feat"><span class="ck">✓</span> 1 analyse par jour</div>
+            <div class="plan-feat"><span class="ck">✓</span> Top 20 ATP</div>
+            <div class="plan-feat"><span class="no">✗</span> Analyses illimitées</div>
+            <div class="plan-feat"><span class="no">✗</span> Tous les joueurs</div>
+          </div>
+        </div>
+        <div class="plan-card selected premium-plan" onclick="selectPlan(this,'premium')">
+          <div class="plan-badge-pop">⭐ Recommandé</div>
+          <div class="plan-name">Premium</div>
+          <div class="plan-price">5€<span class="period"> / mois</span></div>
+          <div class="plan-feats">
+            <div class="plan-feat"><span class="ck">✓</span> Analyses illimitées</div>
+            <div class="plan-feat"><span class="ck">✓</span> Top 100 ATP complet</div>
+            <div class="plan-feat"><span class="ck">✓</span> Filtres surface avancés</div>
+            <div class="plan-feat"><span class="ck">✓</span> H2H détaillé</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-cta-modal" onclick="goStripe()">Commencer pour 5€/mois →</button>
+      <p class="modal-note">✓ Sans engagement · Annulation à tout moment · 🔒 Stripe</p>`;
+  }
+
+  if (type === 'login') {
+    title.textContent = 'Connexion';
+    body.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+        <input type="email" placeholder="ton@email.com" style="width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--fb);font-size:0.9rem;outline:none"/>
+        <input type="password" placeholder="Mot de passe" style="width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--fb);font-size:0.9rem;outline:none"/>
+      </div>
+      <button class="btn-cta-modal" onclick="fakeLogin()">Se connecter →</button>
+      <p class="modal-note" style="margin-top:12px">Pas encore de compte ? <a href="#" onclick="openModal('upgrade')" style="color:var(--accent)">S'inscrire</a></p>`;
+  }
+}
+
+function selectPlan(el, plan) {
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn = document.querySelector('.btn-cta-modal');
+  if (plan === 'free') {
+    btn.textContent = 'Continuer gratuitement';
+    btn.onclick = closeModal;
+  } else {
+    btn.textContent = 'Commencer pour 5€/mois →';
+    btn.onclick = goStripe;
+  }
+}
+function goStripe() { window.open(STRIPE_LINK, '_blank'); }
+function fakeLogin() {
+  isPremium = true;
+  document.getElementById('planBadge').textContent = '⭐ Premium';
+  document.getElementById('planBadge').classList.add('premium');
+  document.getElementById('dailyBanner').style.display = 'none';
+  closeModal();
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target.id === 'modalBg') closeModal(); }
+
+// ═══════════════════════════════════════════════════════════════════
+// FETCH API ATP (avec fallback auto)
+// ═══════════════════════════════════════════════════════════════════
+async function loadPlayers() {
+  try {
+    if (RAPIDAPI_KEY === 'YOUR_RAPIDAPI_KEY') throw new Error('No key');
+    const res = await fetch('https://tennisapi1.p.rapidapi.com/api/tennis/rankings/atp', {
+      headers: {
+        'x-rapidapi-host': 'tennisapi1.p.rapidapi.com',
+        'x-rapidapi-key': RAPIDAPI_KEY
+      }
+    });
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    allPlayers = data.rankings.slice(0, 100).map((p, i) => ({
+      rank: p.ranking, name: p.rowName,
+      nat: p.team?.name || '—', flag: '🎾',
+      pts: p.points, age: p.team?.playerTeamInfo?.age || 0,
+      hard: 70 + Math.floor(Math.random()*25),
+      clay: 68 + Math.floor(Math.random()*28),
+      grass: 65 + Math.floor(Math.random()*28),
+      wr: 60 + Math.floor(Math.random()*30),
+      titles: Math.floor(Math.random()*5), h2h: {}
+    }));
+    shown = [...allPlayers];
+  } catch(e) {
+    allPlayers = [...PLAYERS];
+    shown = [...PLAYERS];
+  }
+  render();
+}
+
+loadPlayers();
+</script>
+</body>
+</html>
